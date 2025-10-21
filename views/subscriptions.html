@@ -1,0 +1,466 @@
+<!-- Subscriptions List View -->
+<div class="container-fluid" ng-controller="SubscriptionController as subCtrl">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8">
+                    <h1>
+                        <i class="fas fa-envelope"></i>
+                        Gestión de Suscripciones
+                    </h1>
+                    <p class="lead">Administra todas las suscripciones del sistema</p>
+                </div>
+                <div class="col-md-4 text-right">
+                    <a href="#!/subscriptions/new" class="btn btn-success btn-lg">
+                        <i class="fas fa-plus"></i>
+                        Nueva Suscripción
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Search and Filters -->
+        <div class="filters-section">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="search-box">
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control" 
+                                   placeholder="Buscar por email..." 
+                                   ng-model="subCtrl.searchQuery"
+                                   ng-keypress="$event.keyCode == 13 && subCtrl.searchSubscriptions()">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" 
+                                        type="button" 
+                                        ng-click="subCtrl.searchSubscriptions()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-outline-secondary btn-block" ng-click="subCtrl.loadSubscriptions()">
+                        <i class="fas fa-sync-alt"></i>
+                        Actualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Info -->
+        <div class="results-info" ng-if="!subCtrl.loading">
+            <div class="row">
+                <div class="col-12">
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Mostrando {{ subCtrl.subscriptions.length }} de {{ subCtrl.totalItems }} suscripciones
+                        <span ng-if="subCtrl.searchQuery">(filtradas)</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div ng-if="subCtrl.loading" class="loading-state">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Cargando...</span>
+                </div>
+                <p class="mt-3">Cargando suscripciones...</p>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div ng-if="subCtrl.error && !subCtrl.loading" class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            {{ subCtrl.error }}
+            <button class="btn btn-sm btn-outline-danger ml-3" ng-click="subCtrl.loadSubscriptions()">
+                <i class="fas fa-redo"></i>
+                Reintentar
+            </button>
+        </div>
+
+        <!-- Subscriptions Table -->
+        <div ng-if="!subCtrl.loading && !subCtrl.error" class="subscriptions-table">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th scope="col">
+                                <i class="fas fa-envelope"></i>
+                                Email
+                            </th>
+                            <th scope="col">
+                                <i class="fas fa-tag"></i>
+                                Categoría
+                            </th>
+                            <th scope="col">
+                                <i class="fas fa-toggle-on"></i>
+                                Estado
+                            </th>
+                            <th scope="col">
+                                <i class="fas fa-calendar-alt"></i>
+                                Fecha de Suscripción
+                            </th>
+                            <th scope="col" class="text-center">
+                                <i class="fas fa-cogs"></i>
+                                Acciones
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="subscription in subCtrl.subscriptions" class="subscription-row">
+                            <td>
+                                <div class="email-cell">
+                                    <i class="fas fa-user-circle text-muted mr-2"></i>
+                                    <strong>{{ subscription.email }}</strong>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-info">
+                                    {{ subscription.news_category ? subscription.news_category.name : 'Sin categoría' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge" ng-class="subCtrl.getStatusClass(subscription.is_active)">
+                                    <i class="fas" ng-class="subscription.is_active ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                                    {{ subCtrl.getStatusText(subscription.is_active) }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="date-text">
+                                    {{ subCtrl.formatDate(subscription.created_at) }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            ng-click="subCtrl.editSubscription(subscription)"
+                                            title="Editar suscripción">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            ng-click="subCtrl.confirmDelete(subscription)"
+                                            title="Eliminar suscripción">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div ng-if="subCtrl.subscriptions.length === 0" class="empty-state">
+                <i class="fas fa-inbox fa-3x text-muted"></i>
+                <h4>No hay suscripciones</h4>
+                <p class="text-muted">
+                    <span ng-if="subCtrl.searchQuery">
+                        No se encontraron suscripciones que coincidan con tu búsqueda.
+                    </span>
+                    <span ng-if="!subCtrl.searchQuery">
+                        Aún no hay suscripciones registradas en el sistema.
+                    </span>
+                </p>
+                <div class="empty-actions">
+                    <a href="#!/subscriptions/new" class="btn btn-primary" ng-if="!subCtrl.searchQuery">
+                        <i class="fas fa-plus"></i>
+                        Crear Primera Suscripción
+                    </a>
+                    <button class="btn btn-outline-secondary" ng-click="subCtrl.searchQuery = ''; subCtrl.searchSubscriptions()" ng-if="subCtrl.searchQuery">
+                        <i class="fas fa-times"></i>
+                        Limpiar Búsqueda
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div ng-if="!subCtrl.loading && !subCtrl.error && subCtrl.totalPages > 1" class="pagination-section">
+            <nav aria-label="Navegación de páginas">
+                <ul class="pagination justify-content-center">
+                    <!-- Previous Page -->
+                    <li class="page-item" ng-class="{ disabled: subCtrl.currentPage <= 1 }">
+                        <button class="page-link" 
+                                ng-click="subCtrl.goToPage(subCtrl.currentPage - 1)"
+                                ng-disabled="subCtrl.currentPage <= 1">
+                            <i class="fas fa-chevron-left"></i>
+                            Anterior
+                        </button>
+                    </li>
+
+                    <!-- First Page -->
+                    <li class="page-item" ng-if="subCtrl.currentPage > 3">
+                        <button class="page-link" ng-click="subCtrl.goToPage(1)">1</button>
+                    </li>
+                    <li class="page-item disabled" ng-if="subCtrl.currentPage > 4">
+                        <span class="page-link">...</span>
+                    </li>
+
+                    <!-- Page Numbers -->
+                    <li ng-repeat="page in [] | range:(subCtrl.currentPage - 2):(subCtrl.currentPage + 2)" 
+                        ng-if="page >= 1 && page <= subCtrl.totalPages"
+                        class="page-item" 
+                        ng-class="{ active: page === subCtrl.currentPage }">
+                        <button class="page-link" ng-click="subCtrl.goToPage(page)">{{ page }}</button>
+                    </li>
+
+                    <!-- Last Page -->
+                    <li class="page-item disabled" ng-if="subCtrl.currentPage < subCtrl.totalPages - 3">
+                        <span class="page-link">...</span>
+                    </li>
+                    <li class="page-item" ng-if="subCtrl.currentPage < subCtrl.totalPages - 2">
+                        <button class="page-link" ng-click="subCtrl.goToPage(subCtrl.totalPages)">{{ subCtrl.totalPages }}</button>
+                    </li>
+
+                    <!-- Next Page -->
+                    <li class="page-item" ng-class="{ disabled: subCtrl.currentPage >= subCtrl.totalPages }">
+                        <button class="page-link" 
+                                ng-click="subCtrl.goToPage(subCtrl.currentPage + 1)"
+                                ng-disabled="subCtrl.currentPage >= subCtrl.totalPages">
+                            Siguiente
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Page Info -->
+            <div class="page-info text-center mt-3">
+                <small class="text-muted">
+                    Página {{ subCtrl.currentPage }} de {{ subCtrl.totalPages }}
+                    ({{ subCtrl.totalItems }} suscripciones en total)
+                </small>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-section" ng-if="!subCtrl.loading && subCtrl.subscriptions.length > 0">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-envelope text-primary"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4>{{ subCtrl.totalItems }}</h4>
+                            <p>Total Suscripciones</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4>{{ (subCtrl.subscriptions | filter:{is_active: true}).length }}</h4>
+                            <p>Activas</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-times-circle text-danger"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4>{{ (subCtrl.subscriptions | filter:{is_active: false}).length }}</h4>
+                            <p>Inactivas</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles for Subscriptions Page -->
+<style>
+.page-header {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+    padding: 60px 0;
+    margin-bottom: 40px;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.filters-section {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.results-info {
+    margin-bottom: 20px;
+}
+
+.loading-state {
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.subscriptions-table {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 40px;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+    background-color: #f8f9fa;
+}
+
+.subscription-row {
+    transition: background-color 0.2s ease;
+}
+
+.subscription-row:hover {
+    background-color: #f8f9fa;
+}
+
+.email-cell {
+    display: flex;
+    align-items: center;
+}
+
+.date-text {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.action-buttons .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.empty-state i {
+    margin-bottom: 20px;
+}
+
+.empty-state h4 {
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+.empty-actions {
+    margin-top: 25px;
+}
+
+.pagination-section {
+    margin: 40px 0;
+}
+
+.pagination .page-link {
+    border-radius: 5px;
+    margin: 0 2px;
+    border: 1px solid #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.stats-section {
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid #e9ecef;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+}
+
+.stat-icon i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.stat-content h4 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.stat-content p {
+    color: #6c757d;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        text-align: center;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    .page-header .btn {
+        margin-top: 20px;
+        width: 100%;
+    }
+    
+    .filters-section {
+        padding: 20px;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .pagination .page-link {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+}
+</style>

@@ -1,0 +1,538 @@
+<!-- Unsubscribe View -->
+<div class="container-fluid" ng-controller="UnsubscribeController as unsubCtrl">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-8 text-center">
+                    <h1>
+                        <i class="fas fa-unlink"></i>
+                        Desuscribirse
+                    </h1>
+                    <p class="lead">
+                        Lamentamos verte partir. Puedes desuscribirte fácilmente desde aquí.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8">
+                
+                <!-- Loading State -->
+                <div ng-if="unsubCtrl.loading" class="loading-state">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="sr-only">Procesando...</span>
+                        </div>
+                        <p class="mt-3">{{ unsubCtrl.loadingMessage || 'Procesando solicitud...' }}</p>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div ng-if="unsubCtrl.error && !unsubCtrl.loading" class="alert alert-danger" role="alert">
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                        <h4>Error al Procesar</h4>
+                        <p>{{ unsubCtrl.error }}</p>
+                        <button class="btn btn-outline-danger" ng-click="unsubCtrl.retry()">
+                            <i class="fas fa-redo"></i>
+                            Intentar Nuevamente
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Success State -->
+                <div ng-if="unsubCtrl.success && !unsubCtrl.loading" class="success-state">
+                    <div class="success-card">
+                        <div class="text-center">
+                            <div class="success-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <h2>¡Desuscripción Exitosa!</h2>
+                            <p class="lead">
+                                Te has desuscrito correctamente de las notificaciones de noticias.
+                            </p>
+                            
+                            <div class="success-details" ng-if="unsubCtrl.subscriptionData">
+                                <div class="detail-item">
+                                    <strong>Email:</strong> {{ unsubCtrl.subscriptionData.email }}
+                                </div>
+                                <div class="detail-item" ng-if="unsubCtrl.subscriptionData.news_category">
+                                    <strong>Categoría:</strong> {{ unsubCtrl.subscriptionData.news_category.name }}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Fecha de desuscripción:</strong> {{ unsubCtrl.formatDate(new Date()) }}
+                                </div>
+                            </div>
+
+                            <div class="success-actions">
+                                <a href="#!/" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-home"></i>
+                                    Volver al Inicio
+                                </a>
+                                <a href="#!/subscriptions/new" class="btn btn-outline-success btn-lg">
+                                    <i class="fas fa-plus"></i>
+                                    Nueva Suscripción
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confirmation Form (when token is provided but not yet processed) -->
+                <div ng-if="!unsubCtrl.loading && !unsubCtrl.error && !unsubCtrl.success && unsubCtrl.token" class="confirmation-form">
+                    <div class="confirmation-card">
+                        <div class="text-center">
+                            <div class="warning-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <h2>Confirmar Desuscripción</h2>
+                            <p class="lead">
+                                ¿Estás seguro de que deseas desuscribirte de las notificaciones?
+                            </p>
+                            
+                            <div class="subscription-info" ng-if="unsubCtrl.subscriptionData">
+                                <div class="info-card">
+                                    <h5>Información de la Suscripción</h5>
+                                    <div class="info-item">
+                                        <i class="fas fa-envelope"></i>
+                                        <strong>Email:</strong> {{ unsubCtrl.subscriptionData.email }}
+                                    </div>
+                                    <div class="info-item" ng-if="unsubCtrl.subscriptionData.news_category">
+                                        <i class="fas fa-tag"></i>
+                                        <strong>Categoría:</strong> {{ unsubCtrl.subscriptionData.news_category.name }}
+                                    </div>
+                                    <div class="info-item">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <strong>Suscrito desde:</strong> {{ unsubCtrl.formatDate(unsubCtrl.subscriptionData.created_at) }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="confirmation-actions">
+                                <button class="btn btn-danger btn-lg" ng-click="unsubCtrl.confirmUnsubscribe()">
+                                    <i class="fas fa-unlink"></i>
+                                    Sí, Desuscribirme
+                                </button>
+                                <a href="#!/" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-times"></i>
+                                    Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual Unsubscribe Form (when no token is provided) -->
+                <div ng-if="!unsubCtrl.loading && !unsubCtrl.error && !unsubCtrl.success && !unsubCtrl.token" class="manual-form">
+                    <div class="manual-card">
+                        <div class="text-center">
+                            <div class="form-icon">
+                                <i class="fas fa-envelope-open"></i>
+                            </div>
+                            <h2>Desuscripción Manual</h2>
+                            <p class="lead">
+                                Ingresa tu email para desuscribirte de las notificaciones.
+                            </p>
+                        </div>
+
+                        <form name="unsubscribeForm" ng-submit="unsubCtrl.manualUnsubscribe()" novalidate>
+                            <div class="form-group">
+                                <label for="email" class="form-label">
+                                    <i class="fas fa-envelope"></i>
+                                    Dirección de Email
+                                </label>
+                                <input type="email" 
+                                       id="email"
+                                       name="email"
+                                       class="form-control form-control-lg"
+                                       ng-model="unsubCtrl.email"
+                                       placeholder="tu-email@ejemplo.com"
+                                       required
+                                       ng-class="{ 'is-invalid': unsubscribeForm.email.$invalid && unsubscribeForm.email.$touched }">
+                                
+                                <div class="invalid-feedback" ng-show="unsubscribeForm.email.$invalid && unsubscribeForm.email.$touched">
+                                    <div ng-show="unsubscribeForm.email.$error.required">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        El email es requerido
+                                    </div>
+                                    <div ng-show="unsubscribeForm.email.$error.email">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        Ingresa un email válido
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" 
+                                        class="btn btn-warning btn-lg btn-block"
+                                        ng-disabled="unsubscribeForm.$invalid || unsubCtrl.processing">
+                                    <span ng-if="!unsubCtrl.processing">
+                                        <i class="fas fa-search"></i>
+                                        Buscar Suscripción
+                                    </span>
+                                    <span ng-if="unsubCtrl.processing">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        Buscando...
+                                    </span>
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="help-text">
+                            <p class="text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Si tienes problemas para desuscribirte, revisa tu email para encontrar el enlace de desuscripción directo.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="row justify-content-center mt-5">
+            <div class="col-lg-8">
+                <div class="info-section">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="info-item">
+                                <div class="info-icon">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <h5>Proceso Seguro</h5>
+                                <p>Tu desuscripción se procesa de forma segura y inmediata.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-item">
+                                <div class="info-icon">
+                                    <i class="fas fa-undo"></i>
+                                </div>
+                                <h5>Reversible</h5>
+                                <p>Puedes volver a suscribirte en cualquier momento que desees.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-item">
+                                <div class="info-icon">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <h5>Efecto Inmediato</h5>
+                                <p>Dejarás de recibir notificaciones inmediatamente.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles for Unsubscribe Page -->
+<style>
+.page-header {
+    background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%);
+    color: white;
+    padding: 80px 0;
+    margin-bottom: 50px;
+}
+
+.page-header h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.loading-state {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.success-state,
+.confirmation-form,
+.manual-form {
+    margin-bottom: 40px;
+}
+
+.success-card,
+.confirmation-card,
+.manual-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    padding: 50px;
+    text-align: center;
+}
+
+.success-icon {
+    color: #28a745;
+    font-size: 4rem;
+    margin-bottom: 25px;
+}
+
+.warning-icon {
+    color: #ffc107;
+    font-size: 4rem;
+    margin-bottom: 25px;
+}
+
+.form-icon {
+    color: #17a2b8;
+    font-size: 4rem;
+    margin-bottom: 25px;
+}
+
+.success-card h2,
+.confirmation-card h2,
+.manual-card h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.success-details {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 25px;
+    margin: 30px 0;
+    text-align: left;
+}
+
+.detail-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.success-actions,
+.confirmation-actions {
+    margin-top: 30px;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.subscription-info {
+    margin: 30px 0;
+}
+
+.info-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 25px;
+    text-align: left;
+}
+
+.info-card h5 {
+    color: #495057;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item i {
+    color: #6c757d;
+    width: 20px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-control-lg {
+    padding: 15px 20px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.form-control-lg:focus {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+.form-actions {
+    margin-top: 30px;
+}
+
+.help-text {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+.info-section {
+    background: white;
+    border-radius: 15px;
+    padding: 40px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.info-section .info-item {
+    text-align: center;
+    padding: 20px;
+}
+
+.info-section .info-icon {
+    color: #17a2b8;
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+}
+
+.info-section h5 {
+    color: #333;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.info-section p {
+    color: #6c757d;
+    margin: 0;
+}
+
+/* Button Styles */
+.btn-lg {
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+}
+
+.btn-warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+}
+
+/* Animations */
+.success-card,
+.confirmation-card,
+.manual-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.success-icon,
+.warning-icon,
+.form-icon {
+    animation: bounceIn 0.8s ease-out;
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .page-header {
+        padding: 60px 0;
+    }
+    
+    .page-header h1 {
+        font-size: 2.5rem;
+    }
+    
+    .success-card,
+    .confirmation-card,
+    .manual-card {
+        padding: 30px 20px;
+    }
+    
+    .success-actions,
+    .confirmation-actions {
+        flex-direction: column;
+    }
+    
+    .success-actions .btn,
+    .confirmation-actions .btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .info-section {
+        padding: 25px;
+    }
+    
+    .info-section .info-item {
+        margin-bottom: 30px;
+    }
+}
+
+/* Loading Animation */
+.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>

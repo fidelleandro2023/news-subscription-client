@@ -1,0 +1,499 @@
+<!-- Subscription Form View -->
+<div class="container-fluid" ng-controller="SubscriptionFormController as formCtrl">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8">
+                    <h1>
+                        <i class="fas fa-envelope-open"></i>
+                        {{ formCtrl.isEditing ? 'Editar Suscripción' : 'Nueva Suscripción' }}
+                    </h1>
+                    <p class="lead">
+                        {{ formCtrl.isEditing ? 'Modifica los datos de la suscripción' : 'Crea una nueva suscripción al sistema de noticias' }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-right">
+                    <a href="#!/subscriptions" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-arrow-left"></i>
+                        Volver a Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Loading State -->
+        <div ng-if="formCtrl.loading" class="loading-state">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Cargando...</span>
+                </div>
+                <p class="mt-3">{{ formCtrl.isEditing ? 'Cargando datos de la suscripción...' : 'Preparando formulario...' }}</p>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div ng-if="formCtrl.error && !formCtrl.loading" class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            {{ formCtrl.error }}
+        </div>
+
+        <!-- Success Message -->
+        <div ng-if="formCtrl.successMessage" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i>
+            {{ formCtrl.successMessage }}
+            <button type="button" class="close" ng-click="formCtrl.successMessage = null">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+
+        <!-- Subscription Form -->
+        <div ng-if="!formCtrl.loading" class="form-container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="form-card">
+                        <div class="form-header">
+                            <h3>
+                                <i class="fas fa-user-plus"></i>
+                                Información de la Suscripción
+                            </h3>
+                            <p class="text-muted">Completa todos los campos requeridos</p>
+                        </div>
+
+                        <form name="subscriptionForm" ng-submit="formCtrl.saveSubscription()" novalidate>
+                            <!-- Email Field -->
+                            <div class="form-group">
+                                <label for="email" class="form-label required">
+                                    <i class="fas fa-envelope"></i>
+                                    Dirección de Email
+                                </label>
+                                <input type="email" 
+                                       id="email"
+                                       name="email"
+                                       class="form-control"
+                                       ng-model="formCtrl.subscription.email"
+                                       placeholder="ejemplo@correo.com"
+                                       required
+                                       ng-class="{ 'is-invalid': subscriptionForm.email.$invalid && subscriptionForm.email.$touched }">
+                                
+                                <!-- Email Validation Messages -->
+                                <div class="invalid-feedback" ng-show="subscriptionForm.email.$invalid && subscriptionForm.email.$touched">
+                                    <div ng-show="subscriptionForm.email.$error.required">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        El email es requerido
+                                    </div>
+                                    <div ng-show="subscriptionForm.email.$error.email">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        Ingresa un email válido
+                                    </div>
+                                </div>
+                                
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Se enviarán las notificaciones a esta dirección
+                                </small>
+                            </div>
+
+                            <!-- Category Field -->
+                            <div class="form-group">
+                                <label for="category" class="form-label required">
+                                    <i class="fas fa-tag"></i>
+                                    Categoría de Noticias
+                                </label>
+                                <select id="category"
+                                        name="category"
+                                        class="form-control"
+                                        ng-model="formCtrl.subscription.news_category_id"
+                                        ng-options="category.id as category.name for category in formCtrl.categories"
+                                        required
+                                        ng-class="{ 'is-invalid': subscriptionForm.category.$invalid && subscriptionForm.category.$touched }">
+                                    <option value="">Selecciona una categoría</option>
+                                </select>
+                                
+                                <!-- Category Validation Messages -->
+                                <div class="invalid-feedback" ng-show="subscriptionForm.category.$invalid && subscriptionForm.category.$touched">
+                                    <div ng-show="subscriptionForm.category.$error.required">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        Debes seleccionar una categoría
+                                    </div>
+                                </div>
+                                
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Solo recibirás noticias de la categoría seleccionada
+                                </small>
+                            </div>
+
+                            <!-- Active Status Field (only for editing) -->
+                            <div class="form-group" ng-if="formCtrl.isEditing">
+                                <label class="form-label">
+                                    <i class="fas fa-toggle-on"></i>
+                                    Estado de la Suscripción
+                                </label>
+                                <div class="custom-control custom-switch">
+                                    <input type="checkbox" 
+                                           class="custom-control-input" 
+                                           id="isActive"
+                                           ng-model="formCtrl.subscription.is_active">
+                                    <label class="custom-control-label" for="isActive">
+                                        <span ng-if="formCtrl.subscription.is_active" class="text-success">
+                                            <i class="fas fa-check-circle"></i>
+                                            Suscripción Activa
+                                        </span>
+                                        <span ng-if="!formCtrl.subscription.is_active" class="text-danger">
+                                            <i class="fas fa-times-circle"></i>
+                                            Suscripción Inactiva
+                                        </span>
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Las suscripciones inactivas no reciben notificaciones
+                                </small>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="form-actions">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <button type="button" 
+                                                class="btn btn-outline-secondary btn-block"
+                                                ng-click="formCtrl.goBack()">
+                                            <i class="fas fa-times"></i>
+                                            Cancelar
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <button type="submit" 
+                                                class="btn btn-primary btn-block"
+                                                ng-disabled="subscriptionForm.$invalid || formCtrl.saving">
+                                            <span ng-if="!formCtrl.saving">
+                                                <i class="fas" ng-class="formCtrl.isEditing ? 'fa-save' : 'fa-plus'"></i>
+                                                {{ formCtrl.isEditing ? 'Actualizar Suscripción' : 'Crear Suscripción' }}
+                                            </span>
+                                            <span ng-if="formCtrl.saving">
+                                                <i class="fas fa-spinner fa-spin"></i>
+                                                {{ formCtrl.isEditing ? 'Actualizando...' : 'Creando...' }}
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Info Sidebar -->
+                <div class="col-lg-4">
+                    <div class="info-sidebar">
+                        <!-- Subscription Info -->
+                        <div class="info-card">
+                            <div class="info-header">
+                                <h4>
+                                    <i class="fas fa-info-circle"></i>
+                                    Información Importante
+                                </h4>
+                            </div>
+                            <div class="info-content">
+                                <ul class="info-list">
+                                    <li>
+                                        <i class="fas fa-check text-success"></i>
+                                        Las suscripciones son gratuitas
+                                    </li>
+                                    <li>
+                                        <i class="fas fa-check text-success"></i>
+                                        Puedes cambiar la categoría en cualquier momento
+                                    </li>
+                                    <li>
+                                        <i class="fas fa-check text-success"></i>
+                                        Recibirás notificaciones inmediatas
+                                    </li>
+                                    <li>
+                                        <i class="fas fa-check text-success"></i>
+                                        Puedes desuscribirte cuando quieras
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Categories Info -->
+                        <div class="info-card" ng-if="formCtrl.categories.length > 0">
+                            <div class="info-header">
+                                <h4>
+                                    <i class="fas fa-tags"></i>
+                                    Categorías Disponibles
+                                </h4>
+                            </div>
+                            <div class="info-content">
+                                <div class="category-list">
+                                    <div ng-repeat="category in formCtrl.categories" class="category-item">
+                                        <span class="badge badge-info">{{ category.name }}</span>
+                                        <small class="text-muted" ng-if="category.description">
+                                            {{ category.description }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Help Card -->
+                        <div class="info-card">
+                            <div class="info-header">
+                                <h4>
+                                    <i class="fas fa-question-circle"></i>
+                                    ¿Necesitas Ayuda?
+                                </h4>
+                            </div>
+                            <div class="info-content">
+                                <p class="text-muted">
+                                    Si tienes problemas con el formulario o necesitas asistencia, 
+                                    no dudes en contactarnos.
+                                </p>
+                                <button class="btn btn-outline-info btn-sm btn-block">
+                                    <i class="fas fa-envelope"></i>
+                                    Contactar Soporte
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles for Subscription Form -->
+<style>
+.page-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 60px 0;
+    margin-bottom: 40px;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.loading-state {
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.form-container {
+    margin-bottom: 40px;
+}
+
+.form-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.form-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 30px;
+    text-align: center;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.form-header h3 {
+    color: #495057;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.form-card form {
+    padding: 40px;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-label.required::after {
+    content: '*';
+    color: #dc3545;
+    margin-left: 4px;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    padding: 12px 15px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+}
+
+.invalid-feedback {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: #dc3545;
+}
+
+.custom-control-label {
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.form-actions {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid #e9ecef;
+}
+
+.form-actions .btn {
+    padding: 12px 24px;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.info-sidebar {
+    padding-left: 20px;
+}
+
+.info-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+    overflow: hidden;
+}
+
+.info-header {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+    padding: 20px;
+}
+
+.info-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.info-content {
+    padding: 25px;
+}
+
+.info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-list li {
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.info-list li:last-child {
+    border-bottom: none;
+}
+
+.category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.category-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.category-item .badge {
+    align-self: flex-start;
+}
+
+/* Alert Animations */
+.alert {
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .page-header {
+        text-align: center;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    .page-header .btn {
+        margin-top: 20px;
+        width: 100%;
+    }
+    
+    .form-card form {
+        padding: 25px;
+    }
+    
+    .form-header {
+        padding: 25px;
+    }
+    
+    .info-sidebar {
+        padding-left: 0;
+        margin-top: 30px;
+    }
+    
+    .form-actions .btn {
+        margin-bottom: 10px;
+    }
+}
+
+/* Loading Animation */
+.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>

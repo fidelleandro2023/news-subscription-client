@@ -1,0 +1,467 @@
+<!-- Home View -->
+<div class="container-fluid" ng-controller="HomeController as homeCtrl">
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8 mx-auto text-center">
+                    <h1 class="hero-title">
+                        <i class="fas fa-newspaper"></i>
+                        Portal de Noticias
+                    </h1>
+                    <p class="hero-subtitle">
+                        Mantente informado con las últimas noticias. Suscríbete para recibir actualizaciones directamente en tu email.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="#!/news" class="btn btn-primary btn-lg">
+                            <i class="fas fa-list"></i>
+                            Ver Todas las Noticias
+                        </a>
+                        <button class="btn btn-outline-primary btn-lg" ng-click="homeCtrl.openSubscriptionModal()">
+                            <i class="fas fa-envelope"></i>
+                            Suscribirse
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="stats-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-newspaper text-primary"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>{{ homeCtrl.stats.totalNews || 0 }}</h3>
+                            <p>Noticias Publicadas</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-tags text-success"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>{{ homeCtrl.stats.totalCategories || 0 }}</h3>
+                            <p>Categorías Disponibles</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users text-info"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>+</h3>
+                            <p>Suscriptores Activos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest News Section -->
+    <div class="latest-news-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <div class="section-header">
+                        <h2>
+                            <i class="fas fa-clock"></i>
+                            Últimas Noticias
+                        </h2>
+                        <a href="#!/news" class="btn btn-outline-primary">
+                            Ver Todas
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div ng-if="newsCtrl.loading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Cargando...</span>
+                </div>
+                <p class="mt-3">Cargando noticias...</p>
+            </div>
+
+            <!-- Error State -->
+            <div ng-if="newsCtrl.error && !newsCtrl.loading" class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ newsCtrl.error }}
+            </div>
+
+            <!-- News Grid -->
+            <div ng-if="!newsCtrl.loading && !newsCtrl.error" class="row">
+                <div ng-repeat="article in newsCtrl.news | limitTo:6" class="col-lg-4 col-md-6 mb-4">
+                    <div class="news-card" ng-click="newsCtrl.goToNewsDetail(article.id)">
+                        <div class="news-card-header">
+                            <span class="news-category badge badge-{{ newsCtrl.getCategoryColor(article.news_category_id) }}">
+                                {{ newsCtrl.getCategoryName(article.news_category_id) }}
+                            </span>
+                            <span class="news-date">
+                                <i class="fas fa-calendar-alt"></i>
+                                {{ newsCtrl.formatDate(article.created_at) }}
+                            </span>
+                        </div>
+                        
+                        <div class="news-card-body">
+                            <h5 class="news-title">{{ article.title }}</h5>
+                            <p class="news-excerpt">
+                                {{ newsCtrl.truncateText(article.content, 120) }}
+                            </p>
+                        </div>
+                        
+                        <div class="news-card-footer">
+                            <div class="news-author" ng-if="article.author">
+                                <i class="fas fa-user"></i>
+                                {{ article.author.name }}
+                            </div>
+                            <div class="news-read-more">
+                                Leer más
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- No News Message -->
+                <div ng-if="newsCtrl.news.length === 0" class="col-12">
+                    <div class="empty-state">
+                        <i class="fas fa-newspaper fa-3x text-muted"></i>
+                        <h4>No hay noticias disponibles</h4>
+                        <p class="text-muted">Vuelve más tarde para ver las últimas actualizaciones.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Section -->
+    <div class="categories-section" ng-if="newsCtrl.categories.length > 0">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <div class="section-header">
+                        <h2>
+                            <i class="fas fa-tags"></i>
+                            Categorías
+                        </h2>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div ng-repeat="category in newsCtrl.categories" class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="category-card" ng-click="newsCtrl.filterByCategory(category.id)">
+                        <div class="category-icon">
+                            <i class="fas fa-folder text-{{ newsCtrl.getCategoryColor(category.id) }}"></i>
+                        </div>
+                        <div class="category-content">
+                            <h6>{{ category.name }}</h6>
+                            <p class="text-muted" ng-if="category.description">
+                                {{ category.description }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscription CTA Section -->
+    <div class="subscription-cta-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8 mx-auto text-center">
+                    <div class="cta-card">
+                        <h3>
+                            <i class="fas fa-bell"></i>
+                            ¿No te quieres perder ninguna noticia?
+                        </h3>
+                        <p>
+                            Suscríbete a nuestro boletín y recibe las últimas noticias directamente en tu correo electrónico.
+                        </p>
+                        <div class="cta-actions">
+                            <div class="subscription-form mb-3">
+                                <div class="input-group input-group-lg">
+                                    <input type="email" 
+                                           class="form-control" 
+                                           placeholder="Ingresa tu correo electrónico" 
+                                           ng-model="homeCtrl.subscriptionEmail"
+                                           ng-disabled="homeCtrl.subscriptionLoading"
+                                           required>
+                                    <div class="input-group-append">
+                                        <button class="btn btn-success" 
+                                                type="button"
+                                                ng-click="homeCtrl.quickSubscribe()"
+                                                ng-disabled="homeCtrl.subscriptionLoading">
+                                            <i class="fas fa-spinner fa-spin" ng-if="homeCtrl.subscriptionLoading"></i>
+                                            <i class="fas fa-envelope-open" ng-if="!homeCtrl.subscriptionLoading"></i>
+                                            <span ng-if="homeCtrl.subscriptionLoading">Procesando...</span>
+                                            <span ng-if="!homeCtrl.subscriptionLoading">Suscribirse Ahora</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mt-2" ng-if="homeCtrl.subscriptionMessage">
+                                    <div class="alert alert-success" ng-if="homeCtrl.subscriptionMessage.includes('exitosa')">
+                                        {{ homeCtrl.subscriptionMessage }}
+                                    </div>
+                                    <div class="alert alert-danger" ng-if="!homeCtrl.subscriptionMessage.includes('exitosa')">
+                                        {{ homeCtrl.subscriptionMessage }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <a href="#!/subscriptions/new" class="btn btn-outline-success">
+                                    <i class="fas fa-cog"></i>
+                                    Opciones Avanzadas
+                                </a>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-3">
+                            <i class="fas fa-shield-alt"></i>
+                            Tu email está seguro con nosotros. Puedes cancelar tu suscripción en cualquier momento.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles for Home Page -->
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 80px 0;
+    margin-bottom: 50px;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+.hero-actions .btn {
+    margin: 0 10px;
+}
+
+.stats-section {
+    margin-bottom: 60px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon i {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+}
+
+.stat-content h3 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.latest-news-section {
+    margin-bottom: 60px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.section-header h2 {
+    color: #333;
+    font-weight: 600;
+    margin: 0;
+}
+
+.categories-section {
+    background-color: #f8f9fa;
+    padding: 60px 0;
+    margin-bottom: 60px;
+}
+
+.category-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.category-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.category-icon i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.subscription-cta-section {
+    margin-bottom: 60px;
+}
+
+.cta-card {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 50px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3);
+}
+
+.cta-card h3 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-state i {
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-actions .btn {
+        display: block;
+        margin: 10px 0;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .section-header .btn {
+        margin-top: 15px;
+    }
+}
+</style>
+
+<!-- Modal de Suscripción -->
+<div class="modal fade" id="subscriptionModal" tabindex="-1" role="dialog" aria-labelledby="subscriptionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="subscriptionModalLabel">
+                    <i class="fas fa-envelope-open"></i>
+                    Suscríbete al Boletín
+                </h5>
+                <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close" ng-click="homeCtrl.closeSubscriptionModal()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-newspaper text-primary" style="font-size: 3rem;"></i>
+                    <p class="mt-3 text-muted">
+                        Recibe las últimas noticias directamente en tu correo electrónico. 
+                        ¡No te pierdas ninguna actualización importante!
+                    </p>
+                </div>
+                
+                <form ng-submit="homeCtrl.subscribeFromModal()" novalidate>
+                    <div class="form-group">
+                        <label for="modalEmail" class="font-weight-bold">
+                            <i class="fas fa-envelope"></i>
+                            Correo Electrónico
+                        </label>
+                        <input type="email" 
+                               class="form-control form-control-lg" 
+                               id="modalEmail"
+                               placeholder="ejemplo@correo.com" 
+                               ng-model="homeCtrl.modalSubscriptionEmail"
+                               ng-disabled="homeCtrl.modalSubscriptionLoading"
+                               required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modalName" class="font-weight-bold">
+                            <i class="fas fa-user"></i>
+                            Nombre (Opcional)
+                        </label>
+                        <input type="text" 
+                               class="form-control form-control-lg" 
+                               id="modalName"
+                               placeholder="Tu nombre" 
+                               ng-model="homeCtrl.modalSubscriptionName"
+                               ng-disabled="homeCtrl.modalSubscriptionLoading">
+                    </div>
+                    
+                    <div class="alert alert-success" ng-if="homeCtrl.modalSubscriptionMessage && (homeCtrl.modalSubscriptionMessage.includes('exitosa') || homeCtrl.modalSubscriptionMessage.includes('Suscripción exitosa'))">
+                        <i class="fas fa-check-circle"></i>
+                        {{ homeCtrl.modalSubscriptionMessage }}
+                    </div>
+                    
+                    <div class="alert alert-danger" ng-if="homeCtrl.modalSubscriptionMessage && !(homeCtrl.modalSubscriptionMessage.includes('exitosa') || homeCtrl.modalSubscriptionMessage.includes('Suscripción exitosa'))">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ homeCtrl.modalSubscriptionMessage }}
+                    </div>
+                    
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" ng-click="homeCtrl.closeSubscriptionModal()">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        <button type="button" 
+                                class="btn btn-primary btn-lg"
+                                ng-click="homeCtrl.subscribeFromModal()"
+                                ng-disabled="homeCtrl.modalSubscriptionLoading || !homeCtrl.modalSubscriptionEmail">
+                            <i class="fas fa-spinner fa-spin" ng-if="homeCtrl.modalSubscriptionLoading"></i>
+                            <i class="fas fa-paper-plane" ng-if="!homeCtrl.modalSubscriptionLoading"></i>
+                            <span ng-if="homeCtrl.modalSubscriptionLoading">Suscribiendo...</span>
+                            <span ng-if="!homeCtrl.modalSubscriptionLoading">Suscribirse Ahora</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

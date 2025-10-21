@@ -1,0 +1,384 @@
+<!-- News List View -->
+<div class="container-fluid" ng-controller="NewsController as newsCtrl">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <h1>
+                        <i class="fas fa-newspaper"></i>
+                        Todas las Noticias
+                    </h1>
+                    <p class="lead">Explora todas nuestras noticias y mantente informado</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Filters and Search -->
+        <div class="filters-section">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="search-box">
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control" 
+                                   placeholder="Buscar noticias..." 
+                                   ng-model="newsCtrl.searchQuery"
+                                   ng-keypress="$event.keyCode == 13 && newsCtrl.searchNews()">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" 
+                                        type="button" 
+                                        ng-click="newsCtrl.searchNews()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="category-filter">
+                        <select class="form-control" 
+                                ng-model="newsCtrl.selectedCategory" 
+                                ng-change="newsCtrl.filterByCategory(newsCtrl.selectedCategory)">
+                            <option value="">Todas las categorías</option>
+                            <option ng-repeat="category in newsCtrl.categories" 
+                                    value="{{ category.id }}">
+                                {{ category.name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Active Filters -->
+            <div class="active-filters" ng-if="newsCtrl.searchQuery || newsCtrl.selectedCategory">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="filter-tags">
+                            <span class="filter-label">Filtros activos:</span>
+                            <span ng-if="newsCtrl.searchQuery" class="badge badge-primary filter-tag">
+                                Búsqueda: "{{ newsCtrl.searchQuery }}"
+                                <button type="button" class="btn-close" ng-click="newsCtrl.searchQuery = ''; newsCtrl.searchNews()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </span>
+                            <span ng-if="newsCtrl.selectedCategory" class="badge badge-info filter-tag">
+                                Categoría: {{ newsCtrl.getCategoryName(newsCtrl.selectedCategory) }}
+                                <button type="button" class="btn-close" ng-click="newsCtrl.selectedCategory = null; newsCtrl.filterByCategory(null)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </span>
+                            <button class="btn btn-sm btn-outline-secondary" ng-click="newsCtrl.clearFilters()">
+                                <i class="fas fa-times-circle"></i>
+                                Limpiar filtros
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Info -->
+        <div class="results-info" ng-if="!newsCtrl.loading">
+            <div class="row">
+                <div class="col-12">
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Mostrando {{ newsCtrl.news.length }} de {{ newsCtrl.totalItems }} noticias
+                        <span ng-if="newsCtrl.searchQuery || newsCtrl.selectedCategory">
+                            (filtradas)
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div ng-if="newsCtrl.loading" class="loading-state">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Cargando...</span>
+                </div>
+                <p class="mt-3">Cargando noticias...</p>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div ng-if="newsCtrl.error && !newsCtrl.loading" class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            {{ newsCtrl.error }}
+            <button class="btn btn-sm btn-outline-danger ml-3" ng-click="newsCtrl.loadNews()">
+                <i class="fas fa-redo"></i>
+                Reintentar
+            </button>
+        </div>
+
+        <!-- News Grid -->
+        <div ng-if="!newsCtrl.loading && !newsCtrl.error" class="news-grid">
+            <div class="row">
+                <div ng-repeat="article in newsCtrl.news" class="col-lg-4 col-md-6 mb-4">
+                    <div class="news-card" ng-click="newsCtrl.goToNewsDetail(article.id)">
+                        <div class="news-card-header">
+                            <span class="news-category badge badge-{{ newsCtrl.getCategoryColor(article.news_category_id) }}">
+                                {{ newsCtrl.getCategoryName(article.news_category_id) }}
+                            </span>
+                            <span class="news-date">
+                                <i class="fas fa-calendar-alt"></i>
+                                {{ newsCtrl.formatDate(article.created_at) }}
+                            </span>
+                        </div>
+                        
+                        <div class="news-card-body">
+                            <h5 class="news-title">{{ article.title }}</h5>
+                            <p class="news-excerpt">
+                                {{ newsCtrl.truncateText(article.content, 150) }}
+                            </p>
+                        </div>
+                        
+                        <div class="news-card-footer">
+                            <div class="news-author" ng-if="article.author">
+                                <i class="fas fa-user"></i>
+                                {{ article.author.name }}
+                            </div>
+                            <div class="news-read-more">
+                                Leer más
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- No Results Message -->
+                <div ng-if="newsCtrl.news.length === 0" class="col-12">
+                    <div class="empty-state">
+                        <i class="fas fa-search fa-3x text-muted"></i>
+                        <h4>No se encontraron noticias</h4>
+                        <p class="text-muted">
+                            <span ng-if="newsCtrl.searchQuery || newsCtrl.selectedCategory">
+                                Intenta ajustar tus filtros de búsqueda.
+                            </span>
+                            <span ng-if="!newsCtrl.searchQuery && !newsCtrl.selectedCategory">
+                                No hay noticias disponibles en este momento.
+                            </span>
+                        </p>
+                        <button class="btn btn-primary" ng-click="newsCtrl.clearFilters()" ng-if="newsCtrl.searchQuery || newsCtrl.selectedCategory">
+                            <i class="fas fa-times-circle"></i>
+                            Limpiar filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div ng-if="!newsCtrl.loading && !newsCtrl.error && newsCtrl.totalPages > 1" class="pagination-section">
+            <nav aria-label="Navegación de páginas">
+                <ul class="pagination justify-content-center">
+                    <!-- Previous Page -->
+                    <li class="page-item" ng-class="{ disabled: newsCtrl.currentPage <= 1 }">
+                        <button class="page-link" 
+                                ng-click="newsCtrl.goToPage(newsCtrl.currentPage - 1)"
+                                ng-disabled="newsCtrl.currentPage <= 1">
+                            <i class="fas fa-chevron-left"></i>
+                            Anterior
+                        </button>
+                    </li>
+
+                    <!-- First Page -->
+                    <li class="page-item" ng-if="newsCtrl.currentPage > 3">
+                        <button class="page-link" ng-click="newsCtrl.goToPage(1)">1</button>
+                    </li>
+                    <li class="page-item disabled" ng-if="newsCtrl.currentPage > 4">
+                        <span class="page-link">...</span>
+                    </li>
+
+                    <!-- Page Numbers -->
+                    <li ng-repeat="page in [] | range:(newsCtrl.currentPage - 2):(newsCtrl.currentPage + 2)" 
+                        ng-if="page >= 1 && page <= newsCtrl.totalPages"
+                        class="page-item" 
+                        ng-class="{ active: page === newsCtrl.currentPage }">
+                        <button class="page-link" ng-click="newsCtrl.goToPage(page)">{{ page }}</button>
+                    </li>
+
+                    <!-- Last Page -->
+                    <li class="page-item disabled" ng-if="newsCtrl.currentPage < newsCtrl.totalPages - 3">
+                        <span class="page-link">...</span>
+                    </li>
+                    <li class="page-item" ng-if="newsCtrl.currentPage < newsCtrl.totalPages - 2">
+                        <button class="page-link" ng-click="newsCtrl.goToPage(newsCtrl.totalPages)">{{ newsCtrl.totalPages }}</button>
+                    </li>
+
+                    <!-- Next Page -->
+                    <li class="page-item" ng-class="{ disabled: newsCtrl.currentPage >= newsCtrl.totalPages }">
+                        <button class="page-link" 
+                                ng-click="newsCtrl.goToPage(newsCtrl.currentPage + 1)"
+                                ng-disabled="newsCtrl.currentPage >= newsCtrl.totalPages">
+                            Siguiente
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Page Info -->
+            <div class="page-info text-center mt-3">
+                <small class="text-muted">
+                    Página {{ newsCtrl.currentPage }} de {{ newsCtrl.totalPages }}
+                    ({{ newsCtrl.totalItems }} noticias en total)
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles for News Page -->
+<style>
+.page-header {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+    padding: 60px 0;
+    margin-bottom: 40px;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.filters-section {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.search-box, .category-filter {
+    margin-bottom: 20px;
+}
+
+.active-filters {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+.filter-tags {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.filter-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+}
+
+.filter-tag .btn-close {
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0;
+    margin-left: 5px;
+    opacity: 0.7;
+    cursor: pointer;
+}
+
+.filter-tag .btn-close:hover {
+    opacity: 1;
+}
+
+.results-info {
+    margin-bottom: 20px;
+}
+
+.loading-state {
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.news-grid {
+    margin-bottom: 40px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.empty-state i {
+    margin-bottom: 20px;
+}
+
+.empty-state h4 {
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+.pagination-section {
+    margin: 40px 0;
+}
+
+.pagination .page-link {
+    border-radius: 5px;
+    margin: 0 2px;
+    border: 1px solid #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.page-info {
+    margin-top: 15px;
+}
+
+@media (max-width: 768px) {
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    .filters-section {
+        padding: 20px;
+    }
+    
+    .filter-tags {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .pagination .page-link {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+}
+</style>
+
+<!-- Range Filter for Pagination -->
+<script>
+angular.module('newsSubscriptionApp').filter('range', function() {
+    return function(input, min, max) {
+        min = parseInt(min);
+        max = parseInt(max);
+        for (var i = min; i <= max; i++) {
+            input.push(i);
+        }
+        return input;
+    };
+});
+</script>
